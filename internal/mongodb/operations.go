@@ -3,14 +3,23 @@ package mongodb
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+const database = "log_aggregator_db"
+
 type Connection struct {
 	Client *mongo.Client
+}
+
+type Log struct {
+	ContainerId string
+	Log         string
+	DateTime    time.Time
 }
 
 func Connect() *Connection {
@@ -29,4 +38,12 @@ func Connect() *Connection {
 	fmt.Println("Successfully connected and pinged.")
 
 	return &Connection{Client: client}
+}
+
+func (conn Connection) InsertOne(collection string, log Log) (*mongo.InsertOneResult, error) {
+	return conn.getCollection(collection).InsertOne(context.TODO(), log)
+}
+
+func (conn Connection) getCollection(name string) *mongo.Collection {
+	return conn.Client.Database(database).Collection(name)
 }
