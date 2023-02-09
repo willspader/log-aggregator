@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,6 +12,7 @@ import (
 )
 
 const database = "log_aggregator_db"
+const collectionPrefix = "log-"
 
 type Connection struct {
 	Client *mongo.Client
@@ -40,10 +42,23 @@ func Connect() *Connection {
 	return &Connection{Client: client}
 }
 
-func (conn Connection) InsertOne(collection string, log Log) (*mongo.InsertOneResult, error) {
-	return conn.getCollection(collection).InsertOne(context.TODO(), log)
+func (conn Connection) InsertMany(items []interface{}) (*mongo.InsertManyResult, error) {
+	return conn.getCollection().InsertMany(context.TODO(), items)
 }
 
-func (conn Connection) getCollection(name string) *mongo.Collection {
-	return conn.Client.Database(database).Collection(name)
+func (conn Connection) getCollection() *mongo.Collection {
+	return conn.Client.Database(database).Collection(collectionPrefix + getCollectionDate())
+}
+
+func getCollectionDate() string {
+	year, month, day := time.Now().Date()
+
+	return strconv.Itoa(year) + getMonthDayTwoDigits(strconv.Itoa(int(month))) + getMonthDayTwoDigits(strconv.Itoa(day))
+}
+
+func getMonthDayTwoDigits(s string) string {
+	if len(s) == 2 {
+		return s
+	}
+	return "0" + s
 }
